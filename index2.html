@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Demo Pulquería</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        max-width: 600px;
+        margin: 20px auto;
+        padding: 0 10px;
+      }
+      .card {
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 6px;
+      }
+      label {
+        display: block;
+        margin-top: 10px;
+        font-weight: bold;
+      }
+      input,
+      select,
+      button {
+        width: 100%;
+        padding: 8px;
+        margin-top: 5px;
+        box-sizing: border-box;
+      }
+      button {
+        background-color: #2e7d32;
+        color: white;
+        border: none;
+        margin-top: 15px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      button:hover {
+        background-color: #1b5e20;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🍺 Pulquería Demo</h1>
+
+    <!-- Botón para alternar la vista del formulario -->
+    <button id="btn-toggle-form" onclick="toggleFormulario()">
+      + AGREGAR NUEVO PULQUE
+    </button>
+
+    <!-- FORMULARIO DE REGISTRO (Oculto inicialmente) -->
+    <div id="seccion-formulario" class="card hidden">
+      <h2>Registrar Nuevo Sabor</h2>
+      <form id="form-pulque" onsubmit="guardarPulque(event)">
+        <label>Nombre del Sabor: <span style="color:red;"> *<span></label>
+        <input type="text" id="nombre" placeholder="Ej. Mandarina" required />
+
+        <label>Tipo:</label>
+        <select id="tipo" required>
+          <option value="Curado">Curado</option>
+          <option value="Natural">Natural</option>
+        </select>
+
+        <label>Precio por Litro ($):</label>
+        <input
+          type="number"
+          step="0.01"
+          id="precio"
+          placeholder="85.00"
+          required
+        />
+
+        <label>Stock (Litros):</label>
+        <input
+          type="number"
+          step="0.1"
+          id="stock"
+          placeholder="20.0"
+          required
+        />
+
+        <button type="submit">Guardar en Base de Datos</button>
+      </form>
+    </div>
+
+    <hr style="margin: 25px 0" />
+
+    <!-- LISTA DE SABORES -->
+    <h2>Catálogo Actual</h2>
+    <button onclick="obtenerPulques()" style="background-color: #0277bd">
+      🔄 Cargar / Refrescar Sabores
+    </button>
+    <ul id="lista-pulques"></ul>
+
+    <script>
+      const SUPABASE_URL = 'https://tlgpbkrpclpywgxsefsc.supabase.co';
+      const SUPABASE_ANON_KEY = 'sb_publishable_22fanPO3JaXNgRb1w-A61Q_l5sOXbzw'; // Asegúrate de mantener tu llave aquí
+
+      const supabaseClient = supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+      );
+
+      // Muestra u oculta el formulario al presionar el botón
+      function toggleFormulario() {
+        const form = document.getElementById('seccion-formulario');
+        const btn = document.getElementById('btn-toggle-form');
+
+        if (form.classList.contains('hidden')) {
+          form.classList.remove('hidden');
+          btn.textContent = '✖ CANCELAR REGISTRO';
+        } else {
+          form.classList.add('hidden');
+          btn.textContent = '+ AGREGAR NUEVO PULQUE';
+        }
+      }
+
+      // 1. CONSULTAR DATOS (SELECT)
+      async function obtenerPulques() {
+        const lista = document.getElementById('lista-pulques');
+        lista.innerHTML = 'Cargando...';
+
+        const { data, error } = await supabaseClient
+          .from('sabores_pulque')
+          .select('*');
+
+        if (error) {
+          console.error('Error:', error);
+          lista.innerHTML =
+            '<li>Error al cargar los datos. Revisa la consola.</li>';
+          return;
+        }
+
+        lista.innerHTML = '';
+        data.forEach((pulque) => {
+          const item = document.createElement('li');
+          item.style.marginBottom = '8px';
+          item.textContent = `${pulque.nombre} (${pulque.tipo}) - $${pulque.precio_litro}/L - Stock: ${pulque.stock_litros}L`;
+          lista.appendChild(item);
+        });
+      }
+
+      // 2. CREAR REGISTRO (INSERT)
+      async function guardarPulque(event) {
+        event.preventDefault(); // Evita que la página se recargue
+
+        const nombre = document.getElementById('nombre').value;
+        const tipo = document.getElementById('tipo').value;
+        const precio = parseFloat(document.getElementById('precio').value);
+        const stock = parseFloat(document.getElementById('stock').value);
+
+        // Insertar nuevo objeto a la tabla
+        const { data, error } = await supabaseClient
+          .from('sabores_pulque')
+          .insert([
+            {
+              nombre: nombre,
+              tipo: tipo,
+              precio_litro: precio,
+              stock_litros: stock,
+            },
+          ]);
+
+        if (error) {
+          console.error('Error al guardar:', error);
+          alert('Error al guardar el pulque: ' + error.message);
+          return;
+        }
+
+        alert('¡Sabor guardado con éxito!');
+        document.getElementById('form-pulque').reset(); // Limpia los campos
+        toggleFormulario(); // Oculta el formulario
+        obtenerPulques(); // Actualiza la lista automáticamente
+      }
+    </script>
+  </body>
+</html>

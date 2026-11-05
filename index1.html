@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Demo Pulquería</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  </head>
+  <body>
+    <h1>Catálogo de Pulques</h1>
+    <button onclick="obtenerPulques()">Cargar Sabores</button>
+    <ul id="lista-pulques"></ul>
+
+    <script>
+      const SUPABASE_URL = 'https://tlgpbkrpclpywgxsefsc.supabase.co';
+      const SUPABASE_ANON_KEY =
+        'sb_publishable_22fanPO3JaXNgRb1w-A61Q_l5sOXbzw'; // Tu llave anon de Supabase
+
+      const supabaseClient = supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+      );
+
+      async function obtenerPulques() {
+        const lista = document.getElementById('lista-pulques');
+        lista.innerHTML = 'Cargando...';
+
+        const { data, error } = await supabaseClient
+          .from('sabores_pulque')
+          .select('*');
+
+        if (error) {
+          console.error('Error:', error);
+          lista.innerHTML =
+            '<li>Error al cargar los datos. Revisa la consola del navegador.</li>';
+          return;
+        }
+
+        lista.innerHTML = '';
+        data.forEach((pulque) => {
+          const item = document.createElement('li');
+          item.textContent = `${pulque.nombre} (${pulque.tipo}) - $${pulque.precio_litro}/L - Stock: ${pulque.stock_litros}L`;
+          lista.appendChild(item);
+        });
+      }
+    </script>
+  </body>
+</html>
