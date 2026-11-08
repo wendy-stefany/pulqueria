@@ -8,6 +8,9 @@
   <!-- Supabase JS CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js" defer></script>
+  <!-- CDN para Mapas 3D interactivos -->
+  <script src="https://unpkg.com/three"></script>
+  <script src="https://unpkg.com/globe.gl"></script>
 </head>
 <body>
 
@@ -70,6 +73,23 @@
                   <option value="transferencia">Transferencia</option>
                 </select>
               </div>
+              <div class="input-group">
+                <label>País de Destino / Venta</label>
+                <select id="pos-country">
+                  <option value="México">🇲🇽 México</option>
+                  <option value="Estados Unidos">🇺🇸 Estados Unidos</option>
+                  <option value="Canadá">🇨🇦 Canadá</option>
+                  <option value="España">🇪🇸 España</option>
+                  <option value="Alemania">🇩🇪 Alemania</option>
+                  <option value="Francia">🇫🇷 Francia</option>
+                  <option value="Reino Unido">🇬🇧 Reino Unido</option>
+                  <option value="Japón">🇯🇵 Japón</option>
+                  <option value="Corea del Sur">🇰🇷 Corea del Sur</option>
+                  <option value="Australia">🇦🇺 Australia</option>
+                  <option value="Colombia">🇨🇴 Colombia</option>
+                  <option value="Argentina">🇦🇷 Argentina</option>
+                </select>
+              </div>
               <button onclick="checkout()" class="btn btn-success btn-full">Completar Venta</button>
             </div>
           </div>
@@ -107,6 +127,7 @@
               <th>Fecha/Hora</th>
               <th>Método</th>
               <th>Total</th>
+              <th>Pais</th>
               <th class="admin-only">Acciones</th>
             </tr>
           </thead>
@@ -115,13 +136,50 @@
       </section>
 
       <!-- 4. VISTA DASHBOARD (ADMIN) -->
-      <section id="tab-dashboard" class="tab-content hidden">
-        <h2>Métricas y Resumen (Admin)</h2>
-        <div class="kpi-grid">
-          <div class="kpi-card"><h3>Ingresos Totales</h3><p id="kpi-income">$0.00</p></div>
-          <div class="kpi-card"><h3>Ventas Realizadas</h3><p id="kpi-count">0</p></div>
+      <!-- PESTAÑA DASHBOARD (Solo accesible por admins) -->
+<div id="tab-dashboard" class="tab-content hidden">
+  
+    <h2>Dashboard de Administración</h2>
+    
+    <!-- Tarjetas KPI existentes (Ingresos, Conteo de Ventas, etc.) -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <h3>Ventas Totales</h3>
+        <p id="kpi-income">$0.00</p>
+      </div>
+      <div class="kpi-card">
+        <h3>Notas Registradas</h3>
+        <p id="kpi-count">0</p>
+      </div>
+    </div>
+  
+    <!-- ⚠️ AQUÍ DEBE IR LA TARJETA DEL MAPA 3D (Dentro de #tab-dashboard) -->
+    <div class="card" style="margin-top: 1.5rem; border: 1px solid var(--accent);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+          <h3 style="color: var(--accent) !important;">🌍 Geodistribución y Origen del Pulque</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">Monitoreo 3D de Zonas de Cultivo y Exportaciones Globales</p>
         </div>
-      </section>
+        
+        <div style="display: flex; gap: 0.5rem;">
+          <button onclick="switchMap('origin')" id="btn-map-origin" class="btn btn-sm btn-primary">🌵 Zonas de Cultivo</button>
+          <button onclick="switchMap('global')" id="btn-map-global" class="btn btn-sm" style="background: rgba(255,255,255,0.1); color: var(--text);">🌐 Ventas Mundiales</button>
+        </div>
+      </div>
+  
+      <div id="agave-map-container" style="width: 100%; height: 450px; border-radius: 14px; overflow: hidden; background: #040d0a; position: relative;">
+        <div id="map-loading" style="position: absolute; top:50%; left:50%; transform:translate(-50%,-50%); color: var(--accent); font-weight: bold;">
+          ⚡ Cargando Sistema de Cartografía 3D...
+        </div>
+      </div>
+  
+      <div id="map-legend" style="margin-top: 1rem; display: flex; justify-content: space-around; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 8px; font-size: 0.85rem; color: var(--text-muted);">
+        <span>📍 <strong>Origen:</strong> Valle del Mezquital & Altiplano Central</span>
+        <span>✈️ <strong>Rutas de Exportación:</strong> Conexión Directa desde México</span>
+      </div>
+    </div>
+  
+  </div> <!-- CIERRE DE #tab-dashboard -->
 
       <!-- 5. VISTA USUARIOS (ADMIN) -->
       <section id="tab-users" class="tab-content hidden">
@@ -144,7 +202,7 @@
   </div>
 
   <!-- MODAL PARA CREAR PRODUCTO -->
-    <div id="product-modal" class="screen flex-center hidden" style="position: fixed; top: 0; left: 0; background: rgba(0,0,0,0.8); z-index: 2000;">
+   <div id="product-modal" class="screen flex-center hidden" style="position: fixed; top: 0; left: 0; background: rgba(0,0,0,0.8); z-index: 2000;">
         <div class="card" style="width: 100%; max-width: 450px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
             <h3>Añadir Nuevo Producto</h3>

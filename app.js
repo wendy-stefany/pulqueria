@@ -120,6 +120,7 @@ window.loadSalesHistory = async function() {
         id,
         total_amount,
         payment_method,
+        country,
         created_at,
         profiles ( full_name, email )
       `)
@@ -145,6 +146,7 @@ window.loadSalesHistory = async function() {
           <td>${date} <br><small style="color:#9ca3af;">Atendió: ${seller}</small></td>
           <td><span style="text-transform:capitalize;">${s.payment_method}</span></td>
           <td><strong>$${parseFloat(s.total_amount).toFixed(2)}</strong></td>
+          <td><strong>${s.country}</strong></td>
           <td class="admin-only ${currentProfile && currentProfile.role !== 'admin' ? 'hidden' : ''}">
             <button onclick="deleteSale(${s.id})" class="btn btn-danger btn-sm">Eliminar</button>
           </td>
@@ -177,27 +179,164 @@ window.loadSalesHistory = async function() {
     loadDashboardMetrics();
   };
   
-  // 4. CARGAR MÉTRICAS EN EL DASHBOARD (ADMIN)
-  window.loadDashboardMetrics = async function() {
+  let agaveGlobe = null;
+  let currentMapMode = 'origin'; // 'origin' o 'global'
+  let globalSalesData = [];
+  
+  // COORDENADAS DE ORIGEN (Zonas de cultivo en México)
+  const ORIGIN_REGIONS = [
+    { name: "Hidalgo (Valle del Mezquital)", lat: 20.0911, lng: -98.7624, size: 0.8, color: "#f2cebf" },
+    { name: "Tlaxcala (Nanacamilpa)", lat: 19.4839, lng: -98.5364, size: 0.7, color: "#8ec3b0" },
+    { name: "Estado de México (Otumba)", lat: 19.4969, lng: -99.7233, size: 0.6, color: "#4b8b76" },
+    { name: "Puebla (Altiplano)", lat: 19.0414, lng: -98.2063, size: 0.5, color: "#8ec3b0" }
+  ];
+  
+  // COORDENADAS GEOGRÁFICAS DE PAÍSES PARA EXPORTACIÓN
+  const COUNTRY_COORDS = {
+    "México": { lat: 23.6345, lng: -102.5528 },
+    "Estados Unidos": { lat: 37.0902, lng: -95.7129 },
+    "Canadá": { lat: 56.1304, lng: -106.3468 },
+    "España": { lat: 40.4637, lng: -3.7492 },
+    "Alemania": { lat: 51.1657, lng: 10.4515 },
+    "Francia": { lat: 46.2276, lng: 2.2137 },
+    "Reino Unido": { lat: 55.3781, lng: -3.4360 },
+    "Japón": { lat: 36.2048, lng: 138.2529 },
+    "Corea del Sur": { lat: 35.9078, lng: 127.7669 },
+    "Australia": { lat: -25.2744, lng: 133.7751 },
+    "Colombia": { lat: 4.5709, lng: -74.2973 },
+    "Argentina": { lat: -38.4161, lng: -63.6167 }
+  };
+  
+  // CAMBIAR ENTRE MODO CULTIVO Y MODO VENTAS MUNDIALES
+  window.switchMap = function(mode) {
+    currentMapMode = mode;
+    const btnOrigin = document.getElementById("btn-map-origin");
+    const btnGlobal = document.getElementById("btn-map-global");
+  
+    if (mode === 'origin') {
+      btnOrigin.style.background = "var(--primary)";
+      btnOrigin.style.color = "#fff";
+      btnGlobal.style.background = "rgba(255,255,255,0.1)";
+      renderOriginMap();
+    } else {
+      btnGlobal.style.background = "var(--primary)";
+      btnGlobal.style.color = "#fff";
+      btnOrigin.style.background = "rgba(255,255,255,0.1)";
+      renderGlobalMap();
+    }
+  };
+  
+  // 1. RENDERIZAR MAPA DE ORIGEN / CULTIVO (MÉXICO)
+  function renderOriginMap() {
+    if (!agaveGlobe) return;
+  
+    agaveGlobe
+      .pointOfView({ lat: 20.5, lng: -99.0, altitude: 0.8 }, 1500)
+      .arcsData([]) // Limpiar arcos
+      .htmlElementsData(ORIGIN_REGIONS)
+      .htmlElement(d => {
+        const el = document.createElement('div');
+        el.innerHTML = `
+          <div style="background: rgba(13, 41, 34, 0.9); color: ${d.color}; padding: 4px 8px; border-radius: 8px; border: 1px solid ${d.color}; font-size: 11px; font-weight: bold; box-shadow: 0 0 12px ${d.color};">
+            🌵 ${d.name}
+          </div>
+        `;
+        return el;
+      });
+  }
+  
+  // 2. RENDERIZAR MAPA DE VENTAS MUNDIALES (EXPORTACIÓN)
+  function renderGlobalMap() {
+    if (!agaveGlobe) return;
+  
+    const originCoords = COUNTRY_COORDS["México"];
+  
+    // Crear arcos 3D desde México hacia el resto del mundo
+    const arcs = globalSalesData
+      .filter(d => d.country !== "México" && COUNTRY_COORDS[d.country])
+      .map(d => ({
+        startLat: originCoords.lat,
+        startLng: originCoords.lng,
+        endLat: COUNTRY_COORDS[d.country].lat,
+        endLng: COUNTRY_COORDS[d.country].lng,
+        color: ['#f2cebf', '#8ec3b0']
+      }));
+  
+    agaveGlobe
+      .pointOfView({ lat: 25.0, lng: -20.0, altitude: 2.2 }, 1500)
+      .htmlElementsData([]) // Limpiar marcadores de origen
+      .arcsData(arcs)
+      .arcColor('color')
+      .arcDashLength(0.4)
+      .arcDashGap(0.2)
+      .arcDashAnimateTime(2000)
+      .arcStroke(1.2)
+      .pointsData(globalSalesData)
+      .pointLat(d => COUNTRY_COORDS[d.country]?.lat || 0)
+      .pointLng(d => COUNTRY_COORDS[d.country]?.lng || 0)
+      .pointColor(() => '#f2cebf')
+      .pointRadius(d => Math.min(1.5, Math.max(0.4, d.total / 3000)))
+      .pointAltitude(0.05)
+      .pointLabel(d => `<b>${d.country}</b><br/>Ventas Totales: $${d.total.toFixed(2)} MXN`);
+  }
+  
+  // INICIALIZACIÓN GLOBAL DEL GLOBO 3D
+  function initAgave3DMap() {
+    const container = document.getElementById("agave-map-container");
+    if (!container || agaveGlobe) return;
+  
+    document.getElementById("map-loading")?.remove();
+  
+    agaveGlobe = Globe()(container)
+      .globeImageUrl("//unpkg.com/three-globe/example/img/earth-dark.jpg")
+      .backgroundColor("rgba(0,0,0,0)")
+      .width(container.clientWidth)
+      .height(420);
+  
+    agaveGlobe.controls().autoRotate = true;
+    agaveGlobe.controls().autoRotateSpeed = 0.5;
+  
+    renderOriginMap();
+  }
+  
+  // INTEGRACIÓN CON EL DASHBOARD DE SUPABASE
+window.loadDashboardMetrics = async function() {
     if (currentProfile && currentProfile.role !== "admin") return;
   
-    const { data: sales, error } = await supabase
-      .from("sales")
-      .select("total_amount");
+    // Consultar ventas agrupando información
+    const { data: sales, error } = await supabase.from("sales").select("total_amount, country");
+    
+    if (!error && sales) {
+      // 1. CALCULAR MÉTRICAS GENERALES PARA LOS KPIS
+      const totalIncome = sales.reduce((sum, s) => sum + parseFloat(s.total_amount || 0), 0);
+      const totalCount = sales.length;
   
-    if (error) {
-      console.error("Error cargando métricas:", error);
-      return;
+      // Pintar los valores en los KPIs del HTML
+      const incomeEl = document.getElementById("kpi-income");
+      const countEl = document.getElementById("kpi-count");
+  
+      if (incomeEl) {
+        incomeEl.textContent = `$${totalIncome.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      }
+      if (countEl) {
+        countEl.textContent = totalCount;
+      }
+  
+      // 2. AGRUPAR VENTAS ACUMULADAS POR PAÍS PARA EL MAPA 3D
+      const salesByCountry = {};
+      sales.forEach(s => {
+        const country = s.country || "México";
+        salesByCountry[country] = (salesByCountry[country] || 0) + parseFloat(s.total_amount || 0);
+      });
+  
+      globalSalesData = Object.keys(salesByCountry).map(c => ({
+        country: c,
+        total: salesByCountry[c]
+      }));
     }
   
-    const totalIncome = (sales || []).reduce((sum, s) => sum + parseFloat(s.total_amount), 0);
-    const totalCount = (sales || []).length;
-  
-    const incomeEl = document.getElementById("kpi-income");
-    const countEl = document.getElementById("kpi-count");
-  
-    if (incomeEl) incomeEl.textContent = `$${totalIncome.toFixed(2)}`;
-    if (countEl) countEl.textContent = totalCount;
+    // Inicializar o refrescar vista de mapas 3D
+    setTimeout(initAgave3DMap, 300);
   };
   
 async function loadPOS() {
