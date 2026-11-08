@@ -1,431 +1,196 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pulquería App - Panel de Control</title>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pulquería La Bendita - Sistema de Control</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Supabase JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
 
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-
-    <!-- Supabase JS Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <style>
-      :root {
-        --bg-color: #f8fafc;
-        --card-bg: #ffffff;
-        --text-main: #0f172a;
-        --text-muted: #64748b;
-        --primary: #059669;
-        --primary-hover: #047857;
-        --secondary: #3b82f6;
-        --secondary-hover: #1d4ed8;
-        --border: #e2e8f0;
-        --radius: 12px;
-        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
-          0 2px 4px -2px rgba(0, 0, 0, 0.05);
-      }
-
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-        font-family: 'Inter', sans-serif;
-      }
-
-      body {
-        background-color: var(--bg-color);
-        color: var(--text-main);
-        padding: 2rem 1rem;
-        min-height: 100vh;
-      }
-
-      .container {
-        max-width: 720px;
-        margin: 0 auto;
-      }
-
-      header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
-      }
-
-      h1 {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: var(--text-main);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-
-      .subtitle {
-        color: var(--text-muted);
-        font-size: 0.875rem;
-        margin-top: 0.25rem;
-      }
-
-      /* Botones */
-      .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0.625rem 1.25rem;
-        border-radius: var(--radius);
-        font-weight: 600;
-        font-size: 0.875rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        border: none;
-        gap: 0.5rem;
-      }
-
-      .btn-primary {
-        background-color: var(--primary);
-        color: white;
-      }
-      .btn-primary:hover {
-        background-color: var(--primary-hover);
-      }
-
-      .btn-secondary {
-        background-color: white;
-        color: var(--text-main);
-        border: 1px solid var(--border);
-      }
-      .btn-secondary:hover {
-        background-color: #f1f5f9;
-      }
-
-      /* Tarjetas y Formulario */
-      .card {
-        background: var(--card-bg);
-        border-radius: var(--radius);
-        border: 1px solid var(--border);
-        box-shadow: var(--shadow);
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-      }
-
-      .form-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-      }
-
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.375rem;
-      }
-
-      .form-group.full-width {
-        grid-column: span 2;
-      }
-
-      label {
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--text-muted);
-      }
-
-      input,
-      select {
-        padding: 0.625rem 0.75rem;
-        border-radius: 8px;
-        border: 1px solid var(--border);
-        outline: none;
-        font-size: 0.875rem;
-        transition: border-color 0.2s;
-      }
-
-      input:focus,
-      select:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
-      }
-
-      /* Lista de Sabores */
-      .catalog-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-      }
-
-      .pulque-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        list-style: none;
-      }
-
-      .pulque-item {
-        background: var(--card-bg);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 1rem 1.25rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
-      }
-
-      .pulque-item:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow);
-      }
-
-      .pulque-info h3 {
-        font-size: 1rem;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-
-      .pulque-meta {
-        font-size: 0.875rem;
-        color: var(--text-muted);
-        margin-top: 0.25rem;
-      }
-
-      /* Badges */
-      .badge {
-        font-size: 0.75rem;
-        padding: 0.125rem 0.5rem;
-        border-radius: 9999px;
-        font-weight: 500;
-      }
-
-      .badge-curado {
-        background-color: #fef3c7;
-        color: #92400e;
-      }
-      .badge-natural {
-        background-color: #e0f2fe;
-        color: #075985;
-      }
-
-      .price-tag {
-        font-size: 1.125rem;
-        font-weight: 700;
-        color: var(--primary);
-      }
-
-      .hidden {
-        display: none;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <header>
-        <div>
-          <h1>🍺 Pulquería Tradicional</h1>
-          <p class="subtitle">Panel de Gestión de Inventario y Sabores</p>
+  <!-- PANTALLA DE LOGIN -->
+  <div id="login-screen" class="screen flex-center">
+    <div class="card login-card">
+      <h1 class="brand-title">🍶 Pulquería "La Bendita"</h1>
+      <p class="subtitle">Control de Ventas e Inventarios</p>
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="input-group">
+          <label>Correo Electrónico</label>
+          <input type="email" id="login-email" required placeholder="ejemplo@pulqueria.com">
         </div>
-        <button
-          id="btn-toggle"
-          class="btn btn-primary"
-          onclick="toggleFormulario()"
-        >
-          + Nuevo Sabor
-        </button>
-      </header>
+        <div class="input-group">
+          <label>Contraseña</label>
+          <input type="password" id="login-password" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Iniciar Sesión</button>
+      </form>
+    </div>
+  </div>
 
-      <!-- FORMULARIO -->
-      <div id="seccion-formulario" class="card hidden">
-        <h2 style="font-size: 1.125rem; margin-bottom: 1rem">
-          Registrar Nuevo Sabor
-        </h2>
+  <!-- APLICACIÓN PRINCIPAL (NAVBAR + CONTENIDOS) -->
+  <div id="app-screen" class="screen hidden">
+    <!-- Navbar principal -->
+    <header class="navbar">
+      <div class="brand">🍶 La Bendita</div>
+      <nav id="nav-menu">
+        <button onclick="showTab('pos')" class="nav-btn active">🛒 POS / Venta</button>
+        <button onclick="showTab('inventory')" class="nav-btn">📦 Inventario</button>
+        <button onclick="showTab('sales')" class="nav-btn">📋 Ventas</button>
+        <button onclick="showTab('dashboard')" id="nav-dashboard" class="nav-btn admin-only">📊 Dashboard</button>
+        <button onclick="showTab('users')" id="nav-users" class="nav-btn admin-only">👥 Usuarios</button>
+      </nav>
+      <div class="user-info">
+        <span id="user-display">Cargando...</span>
+        <button onclick="logout()" class="btn btn-danger btn-sm">Salir</button>
+      </div>
+    </header>
 
-        <form id="form-pulque" onsubmit="guardarPulque(event)">
-          <div class="form-grid">
-            <div class="form-group full-width">
-              <label>Nombre del Pulque</label>
-              <input
-                type="text"
-                id="nombre"
-                placeholder="Ej. Curado de Piñón"
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label>Tipo</label>
-              <select id="tipo" required>
-                <option value="Curado">Curado</option>
-                <option value="Natural">Natural</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label>Precio por Litro ($)</label>
-              <input
-                type="number"
-                step="0.01"
-                id="precio"
-                placeholder="120.00"
-                required
-              />
-            </div>
-
-            <div class="form-group full-width">
-              <label>Stock Inicial (Litros)</label>
-              <input
-                type="number"
-                step="0.1"
-                id="stock"
-                placeholder="15.0"
-                required
-              />
+    <main class="content">
+      <!-- 1. VISTA POS (Punto de Venta) -->
+      <section id="tab-pos" class="tab-content">
+        <h2>Punto de Venta</h2>
+        <div class="pos-layout">
+          <div class="pos-catalog">
+            <h3>Productos Disponibles</h3>
+            <div id="product-grid" class="grid-products"></div>
+          </div>
+          <div class="pos-cart card">
+            <h3>Carrito de Compra</h3>
+            <div id="cart-items" class="cart-list"></div>
+            <div class="cart-summary">
+              <div class="summary-row"><span>Total:</span><strong id="cart-total">$0.00</strong></div>
+              <div class="input-group">
+                <label>Método de Pago</label>
+                <select id="payment-method">
+                  <option value="efectivo">Efectivo</option>
+                  <option value="tarjeta">Tarjeta</option>
+                  <option value="transferencia">Transferencia</option>
+                </select>
+              </div>
+              <button onclick="checkout()" class="btn btn-success btn-full">Completar Venta</button>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div
-            style="
-              display: flex;
-              gap: 0.5rem;
-              margin-top: 1.25rem;
-              justify-content: flex-end;
-            "
-          >
-            <button
-              type="button"
-              class="btn btn-secondary"
-              onclick="toggleFormulario()"
-            >
-              Cancelar
-            </button>
-            <button type="submit" class="btn btn-primary">Guardar Sabor</button>
-          </div>
+      <!-- 2. VISTA INVENTARIO -->
+      <section id="tab-inventory" class="tab-content hidden">
+        <div class="header-action">
+          <h2>Inventario de Pulques y Productos</h2>
+          <button id="btn-add-product" class="btn btn-primary admin-only" onclick="openProductModal()">+ Nuevo Producto</button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Precio</th>
+              <th>Stock Actual</th>
+              <th>Tipo</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="inventory-table-body"></tbody>
+        </table>
+      </section>
+
+      <!-- 3. VISTA HISTÓRICO VENTAS -->
+      <section id="tab-sales" class="tab-content hidden">
+        <h2>Histórico de Ventas</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID Venta</th>
+              <th>Fecha/Hora</th>
+              <th>Método</th>
+              <th>Total</th>
+              <th class="admin-only">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="sales-table-body"></tbody>
+        </table>
+      </section>
+
+      <!-- 4. VISTA DASHBOARD (ADMIN) -->
+      <section id="tab-dashboard" class="tab-content hidden">
+        <h2>Métricas y Resumen (Admin)</h2>
+        <div class="kpi-grid">
+          <div class="kpi-card"><h3>Ingresos Totales</h3><p id="kpi-income">$0.00</p></div>
+          <div class="kpi-card"><h3>Ventas Realizadas</h3><p id="kpi-count">0</p></div>
+        </div>
+      </section>
+
+      <!-- 5. VISTA USUARIOS (ADMIN) -->
+      <section id="tab-users" class="tab-content hidden">
+        <h2>Gestión de Usuarios</h2>
+        <div class="card">
+          <h3>Registrar Nuevo Empleado / Admin</h3>
+          <form id="create-user-form" class="form-inline">
+            <input type="text" id="new-user-name" placeholder="Nombre completo" required>
+            <input type="email" id="new-user-email" placeholder="Correo electrónico" required>
+            <input type="password" id="new-user-password" placeholder="Contraseña" required>
+            <select id="new-user-role">
+              <option value="empleado">Empleado</option>
+              <option value="admin">Administrador</option>
+            </select>
+            <button type="submit" class="btn btn-primary">Guardar Usuario</button>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL PARA CREAR PRODUCTO -->
+    <div id="product-modal" class="screen flex-center hidden" style="position: fixed; top: 0; left: 0; background: rgba(0,0,0,0.8); z-index: 2000;">
+        <div class="card" style="width: 100%; max-width: 450px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3>Añadir Nuevo Producto</h3>
+            <button onclick="closeProductModal()" class="btn btn-danger btn-sm">✕</button>
+        </div>
+        
+        <form id="create-product-form" onsubmit="handleCreateProduct(event)">
+            <div class="input-group">
+            <label>Nombre del Producto / Sabor</label>
+            <input type="text" id="prod-name" required placeholder="ej. Curado de Piñón">
+            </div>
+            
+            <div class="input-group">
+            <label>Precio ($)</label>
+            <input type="number" step="0.50" id="prod-price" required placeholder="80.00">
+            </div>
+            
+            <div class="input-group">
+            <label>Stock Inicial</label>
+            <input type="number" step="0.1" id="prod-stock" required placeholder="20">
+            </div>
+            
+            <div class="input-group">
+            <label>Unidad de Medida</label>
+            <select id="prod-unit">
+                <option value="litros">Litros</option>
+                <option value="vasos">Vasos</option>
+                <option value="piezas">Piezas</option>
+            </select>
+            </div>
+    
+            <div class="input-group">
+            <label>Stock Mínimo (Alerta)</label>
+            <input type="number" step="0.1" id="prod-min-stock" value="5" required>
+            </div>
+    
+            <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+            <button type="button" onclick="closeProductModal()" class="btn btn-full" style="background: #4b5563; color: white;">Cancelar</button>
+            <button type="submit" class="btn btn-primary btn-full">Guardar Producto</button>
+            </div>
         </form>
-      </div>
-
-      <!-- CATALOGO -->
-      <div class="catalog-header">
-        <h2 style="font-size: 1.25rem">Catálogo de Sabores</h2>
-        <button class="btn btn-secondary" onclick="obtenerPulques()">
-          🔄 Refrescar
-        </button>
-      </div>
-
-      <ul id="lista-pulques" class="pulque-list">
-        <!-- Los elementos se cargan dinámicamente -->
-      </ul>
+        </div>
     </div>
 
-    <script>
-      // CREDENCIALES SUPABASE
-      const SUPABASE_URL = 'https://tlgpbkrpclpywgxsefsc.supabase.co';
-      const SUPABASE_ANON_KEY =
-        'sb_publishable_22fanPO3JaXNgRb1w-A61Q_l5sOXbzw'; // Mantén tu llave anon activa
+  <!-- CONTENEDOR DE TOAST NOTIFICACIONES -->
+  <div id="toast-container"></div>
 
-      const supabaseClient = supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY
-      );
-
-      // Cargar los pulques al iniciar la página
-      document.addEventListener('DOMContentLoaded', obtenerPulques);
-
-      function toggleFormulario() {
-        const form = document.getElementById('seccion-formulario');
-        const btn = document.getElementById('btn-toggle');
-
-        if (form.classList.contains('hidden')) {
-          form.classList.remove('hidden');
-          btn.textContent = '✕ Cerrar Formulario';
-          btn.classList.replace('btn-primary', 'btn-secondary');
-        } else {
-          form.classList.add('hidden');
-          btn.textContent = '+ Nuevo Sabor';
-          btn.classList.replace('btn-secondary', 'btn-primary');
-        }
-      }
-
-      // Consultar datos de Supabase
-      async function obtenerPulques() {
-        const lista = document.getElementById('lista-pulques');
-        lista.innerHTML =
-          '<li style="color: var(--text-muted); text-align: center; padding: 2rem;">Cargando catálogo...</li>';
-
-        const { data, error } = await supabaseClient
-          .from('sabores_pulque')
-          .select('*');
-
-        if (error) {
-          console.error('Error:', error);
-          lista.innerHTML =
-            '<li style="color: #ef4444; text-align: center; padding: 2rem;">Error al cargar la información. Revisa la consola.</li>';
-          return;
-        }
-
-        if (data.length === 0) {
-          lista.innerHTML =
-            '<li style="color: var(--text-muted); text-align: center; padding: 2rem;">No hay sabores registrados en la base de datos.</li>';
-          return;
-        }
-
-        lista.innerHTML = '';
-        data.forEach((pulque) => {
-          const item = document.createElement('li');
-          item.className = 'pulque-item';
-
-          const badgeClass =
-            pulque.tipo === 'Curado' ? 'badge-curado' : 'badge-natural';
-
-          item.innerHTML = `
-          <div class="pulque-info">
-            <h3>
-              ${pulque.nombre} 
-              <span class="badge ${badgeClass}">${pulque.tipo}</span>
-            </h3>
-            <div class="pulque-meta">Stock disponible: <strong>${pulque.stock_litros} Litros</strong></div>
-          </div>
-          <div class="price-tag">
-            $${pulque.precio_litro} <span style="font-size: 0.75rem; font-weight: 400; color: var(--text-muted);">/L</span>
-          </div>
-        `;
-          lista.appendChild(item);
-        });
-      }
-
-      // Insertar nuevo sabor en Supabase
-      async function guardarPulque(event) {
-        event.preventDefault();
-
-        const nombre = document.getElementById('nombre').value;
-        const tipo = document.getElementById('tipo').value;
-        const precio = parseFloat(document.getElementById('precio').value);
-        const stock = parseFloat(document.getElementById('stock').value);
-
-        const { error } = await supabaseClient
-          .from('sabores_pulque')
-          .insert([
-            { nombre, tipo, precio_litro: precio, stock_litros: stock },
-          ]);
-
-        if (error) {
-          alert('Error al guardar: ' + error.message);
-          return;
-        }
-
-        document.getElementById('form-pulque').reset();
-        toggleFormulario();
-        obtenerPulques();
-      }
-    </script>
-  </body>
+</body>
 </html>
